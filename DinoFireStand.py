@@ -4,7 +4,8 @@ import Adafruit_MAX31855.MAX31855 as MAX31855
 import serial
 import Adafruit_ADS1x15
 from hx711 import HX711
-
+from threading import *
+print("finished imports")
 GPIO.setwarnings(False)
 
 # setup servo control
@@ -20,14 +21,6 @@ GPIO.setup(22,GPIO.OUT)
 
 
 
-loadCell = HX711(dout_pin=23,
-               pd_sck_pin=24,
-               channel='A',
-               gain=64)
-loadCell.reset()
-# print((loadCell.get_raw_data()))
-# 
-# exit()
 
 # setup temp sensor
 sensor = MAX31855.MAX31855(11,5,9)
@@ -40,11 +33,37 @@ def readPressure():
     for i in range(4):
         # Read the specified ADC channel using the previously set gain value.
         values[i] = adc.read_adc(i, gain=2/3, data_rate=3300)#data rate 128 or 3300
-    return values    
+    return values
 
+
+def loadCell_thread():
+    # setting up the load cell
+    loadCell = HX711(dout_pin=23,
+                     pd_sck_pin=24,
+                     channel='A',
+                     gain=64)
+    # TODO: Misha pls explain
+    loadCell.reset()
+    
+    with open("loadData.txt","a") as Loadfile:
+        while True:
+            i = 0
+            for item in loadCell.get_raw_data():
+                Loadfile.write("\nTime: " +  str(time.time() - i))
+                Loadfile.write("\nRaw: " + str(item))
+                Loadfile.write("\nLbs: " +  str((-item - 0.5*20000)/19191))
+                Loadfile.write("\n")
+                i = i - 0.1
+
+# the reason there's no provision to stop the thread, is that it writes data slowly enough that space isn't a concern. Stretch goal is to have one, though.
+loadCellThread = Thread(target=loadCell_thread)
+loadCellThread.start()
+
+
+# MAIN RUNTIME CODE
+print("about to open file")
 with open("testData.txt","a") as file:
-
-
+    print("FROG")
     # ser = serial.Serial('/dev/ttyUSB0')
     lastReadTime=0
     with serial.Serial('/dev/ttyUSB0', 9600) as ser:
@@ -55,6 +74,9 @@ with open("testData.txt","a") as file:
         
     # firing state variable lets loop know if it's currently firing
         firingState = 0
+        
+        # now that everything's ready to enter the loop, we let the operator know
+        ser.write("\rDinoFireStand initialized successfully, awaiting commands.\n\r".encode("utf-8"))
         
         while(True):
     #         print("hi")
@@ -72,7 +94,7 @@ with open("testData.txt","a") as file:
                 if("open" in str(line)):
                     GPIO.output(17,GPIO.LOW)
                     ser.write("\ropening purge valve\n\r".encode("utf-8"))
-                    file.write("opening purge valve")
+                    file.write("opening purge valve\n")
                 elif("close" in str(line)):
                     GPIO.output(17,GPIO.HIGH)
                     ser.write("\rclosing purge valve\n\r".encode("utf-8"))
@@ -103,17 +125,17 @@ with open("testData.txt","a") as file:
                     if not firingState:
                         GPIO.output(22,GPIO.HIGH)
                         timeStartFiring = time.time()
-                        file.write("Igniting: "+str(time.time()))
+                        file.write("Igniting: " + str(time.time()) + "\n")
                         ser.write(("\rIgniting: "+str(time.time()) + "\n\r").encode("utf-8"))
                         print("Igniting: "+str(time.time()))
                         firingState = 1
                         igniterOn = 1
                     else:
-                        file.write("Note: 'FIRE' command recieved but already firing.")
+                        file.write("Note: 'FIRE' command recieved but already firing.\n")
                         ser.write(("\r'FIRE' command recieved but already firing." + "\n\r").encode("utf-8"))
                         print("'FIRE' command recieved but already firing.")
                 else:
-                    file.write("Wrong firing password entered! Recieved: " + str(line))
+                    file.write("Wrong firing password entered! Recieved: " + str(line) + "\n")
                     ser.write(("\rWrong firing password entered!\n\r").encode("utf-8"))
                     print("Wrong firing password entered! Recieved: " + str(line))
                 
@@ -136,11 +158,11 @@ with open("testData.txt","a") as file:
             elif("temperature_get" in str(line)):
                 ser.write(("\rTemp: "+str(sensor.readTempC())+"\r\n").encode("utf-8"))
                 
-            elif("loadcell_get" in str(line)):
-                ser.write(("\rLoad Cell Values: " + str(loadCell.get_raw_data()) + " in lbs:" + str((-loadCell.get_raw_data()[0]+20383)/19191)).encode("utf-8"))
+            # elif("loadcell_get" in str(line)):
+            #     ser.write(("\rLoad Cell Values: " + str(loadCell.get_raw_data()) + " in lbs:" + str((-loadCell.get_raw_data()[0]+20383)/19191)).encode("utf-8"))
             
             # while firing, keep making sure valves are in correct position
-            if firingState:
+            if (firingState and (time.time()>(timeStartFiring+0.15))):
                 GPIO.output(18,GPIO.HIGH)
                 GPIO.output(17,GPIO.HIGH)
             
@@ -148,16 +170,16 @@ with open("testData.txt","a") as file:
             if(firingState and igniterOn and (time.time()>timeStartFiring + 2)):
                 GPIO.output(22,GPIO.LOW)
                 igniterOn = 0
-                file.write("Turned off igniter signal: "+str(time.time()))
+                file.write("Turned off igniter signal: "+str(time.time())+"\n")
                 ser.write(("\rTurned off igniter signal: "+str(time.time()) + "\n\r").encode("utf-8"))
                 print("Turned off igniter signal: "+str(time.time()))
             
             # once five seconds have elapsed, close main / open purge and notify user.
-            if(firingState and (time.time()>timeStartFiring + 5)):
+            if(firingState and (time.time()>timeStartFiring + 5.15)):
                 GPIO.output(18,GPIO.LOW)
 #                 GPIO.output(17,GPIO.LOW)
                 firingState = 0
-                file.write("Engine fired successfully: "+str(time.time()))
+                file.write("Engine fired successfully: " + str(time.time()) + "\n")
                 ser.write(("\rEngine fired successfully: "+str(time.time()) + "\n\r").encode("utf-8"))
                 print("Engine fired successfully: "+str(time.time()))
             
