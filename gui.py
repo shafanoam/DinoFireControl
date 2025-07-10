@@ -32,7 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         interfaceWidgies.addWidget(pg.GraphicsLayoutWidget(), row=0, col=0)
         # adding buttons and stuff ig
-
+        
+        # start the plotting stuff here ig
 
 
 app = QtWidgets.QApplication([])
