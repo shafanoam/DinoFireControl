@@ -18,8 +18,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         bigBoi =  pg.LayoutWidget()
-        graphWidgies = bigBoi.addLayout(row=0, col=0)
-        interfaceWidgies = bigBoi.addLayout(row=0, col=1)
+
+        #creating the halves
+        graphWidgies = pg.LayoutWidget()
+        interfaceWidgies = pg.LayoutWidget()
+
+        # graphWidgies = bigBoi.addLayout(row=0, col=0)
+        # interfaceWidgies = bigBoi.addLayout(row=0, col=1)
 
         #creating graphs
         thrustGraph  = pg.PlotWidget(background="black")
@@ -57,15 +62,14 @@ class MainWindow(QtWidgets.QMainWindow):
         interfaceWidgies.addWidget(piOutput, row=1, col=0)
         interfaceWidgies.addWidget(misc, row=1, col=1)
 
+        #finally adding it all to bigBoi
+        bigBoi.addWidget(graphWidgies, row=0, col=0)
+        bigBoi.addWidget(interfaceWidgies, row=0, col=1)
+
 
         self.central = bigBoi
 
         self.setWindowTitle("DinoSore")
-
-        # adding buttons and stuff ig
-        
-        # start the plotting stuff here ig
-
 
     def fire(self):
         print("FIRING")
