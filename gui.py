@@ -23,9 +23,6 @@ class MainWindow(QtWidgets.QMainWindow):
         graphWidgies = pg.LayoutWidget()
         interfaceWidgies = pg.LayoutWidget()
 
-        # graphWidgies = bigBoi.addLayout(row=0, col=0)
-        # interfaceWidgies = bigBoi.addLayout(row=0, col=1)
-
         #creating graphs
         thrustGraph  = pg.PlotWidget(background="black")
         tempGraph = pg.PlotWidget()
@@ -48,13 +45,35 @@ class MainWindow(QtWidgets.QMainWindow):
         self.firingButton = QtWidgets.QPushButton('FIRE')
         self.abortButton= QtWidgets.QPushButton('ABORT')
 
+        self.purgeOpenButton = QtWidgets.QPushButton('Purge Open')
+        self.purgeCloseButton = QtWidgets.QPushButton('Purge Close')
+
+        self.valveOpenButton = QtWidgets.QPushButton('Valve Open')
+        self.valveCloseButton = QtWidgets.QPushButton('Valve Close')
+
+        # TODO: Make the buttons dinosaur-shaped
+
         #linking buttons
         self.firingButton.clicked.connect(self.fire)
         self.abortButton.clicked.connect(self.abort)
 
+        self.purgeOpenButton.clicked.connect(self.purgeO)
+        self.purgeCloseButton.clicked.connect(self.purgeC)
+
+        self.valveOpenButton.clicked.connect(self.valveO)
+        self.valveCloseButton.clicked.connect(self.valveC)
+
+        # sticky fingers option
+
         #adding the buttons to the layouts
         actionButtons.addWidget(self.firingButton, row=0, col=0)
         actionButtons.addWidget(self.abortButton, row=1, col=0)
+
+        valveButtons.addWidget(self.purgeOpenButton, row=0, col=0)
+        valveButtons.addWidget(self.purgeCloseButton, row=1, col=0)
+
+        valveButtons.addWidget(self.valveOpenButton, row=0, col=1)
+        valveButtons.addWidget(self.valveCloseButton, row=1, col=1)
 
         #adding the interface widgies
         interfaceWidgies.addWidget(actionButtons, row=0, col=0)
@@ -70,11 +89,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.central = bigBoi
 
         self.setWindowTitle("DinoSore")
+        self.setCentralWidget(self.central)
 
     def fire(self):
         print("FIRING")
     def abort(self):
-        print("ABORTING")
+        print("ABORTING FETUSES")
+    def valveO(self):
+        print("valve open")
+    def valveC(self):
+        print("valve closed")
+    def purgeO(self):
+        print("purge open")
+    def purgeC(self):
+        print("purge closed")
 
 app = QtWidgets.QApplication([])
 main = MainWindow()
